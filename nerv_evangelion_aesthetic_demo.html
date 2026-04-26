@@ -1,0 +1,2108 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>NERV-Style Vector CRT Operations Demo</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --void: #050300;
+      --void-2: #020100;
+      --panel: #0b0905;
+      --panel-2: #090601;
+      --amber: #e9a42f;
+      --amber-hot: #ffb000;
+      --orange: #ff7a00;
+      --ochre: #c37a00;
+      --amber-dim: #5d3306;
+      --amber-ghost: rgba(233, 164, 47, .20);
+      --cyan: #8ee5cf;
+      --cyan-hot: #28f1d6;
+      --cyan-dim: #184d46;
+      --cyan-ghost: rgba(142, 229, 207, .18);
+      --red: #ff4d4f;
+      --red-hot: #ff1748;
+      --red-dim: #4d0612;
+      --green: #50ff50;
+      --text: #f7b64a;
+      --text-dim: #93611b;
+      --paper: #fff0bd;
+      --u: 4px;
+      --font-ui: "Arial Narrow", "Helvetica Neue Condensed", "Roboto Condensed", Impact, sans-serif;
+      --font-display: Georgia, "Times New Roman", "Noto Serif Display", serif;
+      --font-mono: "Share Tech Mono", "IBM Plex Mono", "JetBrains Mono", Consolas, "Courier New", monospace;
+      --frame: color-mix(in srgb, var(--amber) 72%, transparent);
+      --state: var(--amber);
+      --state-dim: var(--amber-dim);
+    }
+
+    * { box-sizing: border-box; }
+
+    html,
+    body {
+      min-height: 100%;
+      margin: 0;
+      background: var(--void);
+      color: var(--text);
+      font-family: var(--font-mono);
+      font-variant-numeric: tabular-nums;
+    }
+
+    body {
+      overflow-x: hidden;
+      background:
+        radial-gradient(ellipse at 22% 7%, rgba(255, 122, 0, .10), transparent 32%),
+        radial-gradient(ellipse at 84% 81%, rgba(40, 241, 214, .055), transparent 38%),
+        linear-gradient(180deg, #090500 0%, #020100 55%, #000 100%);
+    }
+
+    body::before,
+    body::after {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 2000;
+    }
+
+    body::before {
+      background:
+        repeating-linear-gradient(
+          to bottom,
+          rgba(255, 255, 255, .036) 0,
+          rgba(255, 255, 255, .036) 1px,
+          transparent 1px,
+          transparent 4px
+        );
+      opacity: .52;
+      mix-blend-mode: screen;
+      animation: scanlineDrift 13s linear infinite;
+    }
+
+    body::after {
+      background:
+        radial-gradient(ellipse at center, transparent 56%, rgba(0, 0, 0, .78) 100%),
+        linear-gradient(90deg, rgba(255, 122, 0, .025), transparent 18%, transparent 82%, rgba(255, 122, 0, .025));
+      opacity: .82;
+    }
+
+    @keyframes scanlineDrift {
+      to { background-position-y: 40px; }
+    }
+
+    ::selection {
+      color: #050300;
+      background: var(--amber-hot);
+    }
+
+    button,
+    input {
+      font: inherit;
+    }
+
+    .boot-card {
+      position: fixed;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      z-index: 3000;
+      background: #000;
+      color: var(--amber-hot);
+      text-transform: uppercase;
+      letter-spacing: .14em;
+      transition: opacity .42s steps(4, end), visibility .42s steps(1, end);
+    }
+
+    body.boot-complete .boot-card {
+      opacity: 0;
+      visibility: hidden;
+    }
+
+    .boot-box {
+      width: min(720px, calc(100vw - 36px));
+      border: 1px solid var(--amber);
+      box-shadow: 0 0 40px rgba(255, 122, 0, .18), inset 0 0 0 1px rgba(255, 176, 0, .16);
+      padding: 18px;
+      background: #030100;
+    }
+
+    .boot-title {
+      font-family: var(--font-ui);
+      font-size: clamp(34px, 7vw, 72px);
+      line-height: .82;
+      letter-spacing: .08em;
+      text-shadow: 0 0 18px rgba(255, 176, 0, .34);
+    }
+
+    .boot-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
+      margin-top: 16px;
+    }
+
+    .boot-grid span {
+      height: 10px;
+      border: 1px solid currentColor;
+      animation: bootBlink .72s steps(2, end) infinite;
+      animation-delay: calc(var(--i) * .08s);
+    }
+
+    @keyframes bootBlink { 50% { opacity: .16; } }
+
+    .screen {
+      position: relative;
+      width: min(1460px, calc(100vw - 16px));
+      min-height: calc(100vh - 16px);
+      margin: 8px auto;
+      padding: 10px;
+      isolation: isolate;
+      border: 1px solid rgba(233, 164, 47, .78);
+      background:
+        linear-gradient(90deg, rgba(233, 164, 47, .035), transparent 11%, transparent 89%, rgba(233, 164, 47, .035)),
+        linear-gradient(180deg, rgba(233, 164, 47, .035), transparent 22%, transparent 78%, rgba(233, 164, 47, .02)),
+        rgba(0, 0, 0, .96);
+      box-shadow:
+        0 0 0 1px rgba(233, 164, 47, .16) inset,
+        0 0 80px rgba(233, 164, 47, .06),
+        0 0 120px rgba(0, 0, 0, .94) inset;
+      overflow: hidden;
+    }
+
+    .screen::before,
+    .screen::after {
+      content: "";
+      position: absolute;
+      pointer-events: none;
+      z-index: -1;
+    }
+
+    .screen::before {
+      inset: 5px;
+      border: 1px solid rgba(233, 164, 47, .12);
+      background-image:
+        linear-gradient(rgba(142, 229, 207, .035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(142, 229, 207, .035) 1px, transparent 1px);
+      background-size: 48px 48px;
+      opacity: .35;
+    }
+
+    .screen::after {
+      inset: 0;
+      background-image:
+        radial-gradient(circle at 12% 21%, rgba(255, 255, 255, .08) 0 1px, transparent 1.3px),
+        radial-gradient(circle at 79% 48%, rgba(255, 255, 255, .06) 0 1px, transparent 1.3px),
+        radial-gradient(circle at 42% 72%, rgba(255, 255, 255, .05) 0 1px, transparent 1.3px);
+      background-size: 37px 41px, 53px 59px, 73px 67px;
+      opacity: .10;
+      mix-blend-mode: screen;
+    }
+
+    .crt-band {
+      position: absolute;
+      inset-inline: -18%;
+      height: 12%;
+      pointer-events: none;
+      opacity: .04;
+      background: linear-gradient(to bottom, transparent, rgba(255,255,255,.20), transparent);
+      mix-blend-mode: screen;
+      z-index: 10;
+    }
+
+    .crt-band.b1 { animation: glareA 12s linear infinite; top: 2%; }
+    .crt-band.b2 { animation: glareB 17s linear infinite; top: 52%; }
+
+    @keyframes glareA {
+      0% { transform: translateY(-160%); opacity: 0; }
+      14% { opacity: .052; }
+      74% { opacity: .024; }
+      100% { transform: translateY(850%); opacity: 0; }
+    }
+
+    @keyframes glareB {
+      0% { transform: translateY(780%); opacity: 0; }
+      18% { opacity: .045; }
+      76% { opacity: .022; }
+      100% { transform: translateY(-220%); opacity: 0; }
+    }
+
+    .header {
+      position: relative;
+      display: grid;
+      grid-template-columns: minmax(260px, 1fr) minmax(270px, 420px) minmax(260px, .9fr);
+      gap: 8px;
+      z-index: 1;
+    }
+
+    .header-section {
+      position: relative;
+      min-height: 94px;
+      padding: 10px 12px;
+      border: 1px solid rgba(233, 164, 47, .72);
+      background:
+        linear-gradient(180deg, rgba(233, 164, 47, .055), transparent),
+        rgba(3, 2, 0, .94);
+      overflow: hidden;
+    }
+
+    .header-section::before,
+    .panel::before,
+    .control::before {
+      content: "+";
+      position: absolute;
+      top: 2px;
+      left: 5px;
+      color: currentColor;
+      font-size: 15px;
+      line-height: 1;
+      opacity: .65;
+    }
+
+    .header-section::after,
+    .panel::after,
+    .control::after {
+      content: "+";
+      position: absolute;
+      right: 5px;
+      bottom: 1px;
+      color: currentColor;
+      font-size: 15px;
+      line-height: 1;
+      opacity: .65;
+    }
+
+    .kicker,
+    .micro,
+    .label,
+    .panel-title,
+    .chip,
+    .status-word,
+    .ctrl-title,
+    .axis-label {
+      font-family: var(--font-ui);
+      text-transform: uppercase;
+      letter-spacing: .12em;
+    }
+
+    .kicker {
+      color: var(--ochre);
+      font-size: 13px;
+      line-height: 1;
+    }
+
+    h1,
+    h2,
+    h3,
+    p {
+      margin: 0;
+    }
+
+    h1 {
+      margin-top: 6px;
+      color: var(--amber-hot);
+      font-family: var(--font-ui);
+      font-size: clamp(39px, 4.6vw, 72px);
+      line-height: .76;
+      letter-spacing: .07em;
+      text-transform: uppercase;
+      text-shadow: 0 0 14px rgba(255, 176, 0, .32), 2px 2px 0 rgba(255, 122, 0, .12);
+      animation: hardFlicker 7s steps(2, end) infinite;
+    }
+
+    @keyframes hardFlicker {
+      0%, 86%, 90%, 100% { opacity: 1; }
+      88% { opacity: .68; }
+      91% { opacity: .95; }
+    }
+
+    .subtitle-line {
+      margin-top: 9px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+      color: var(--text-dim);
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+    }
+
+    .alarm-box {
+      --state: var(--amber-hot);
+      display: grid;
+      grid-template-columns: 68px 1fr;
+      align-items: center;
+      gap: 12px;
+      color: var(--state);
+      border-color: var(--state);
+      box-shadow: 0 0 18px color-mix(in srgb, var(--state) 15%, transparent) inset;
+    }
+
+    body[data-mode="nominal"] .alarm-box { --state: var(--cyan); }
+    body[data-mode="degraded"] .alarm-box { --state: var(--amber-hot); }
+    body[data-mode="emergency"] .alarm-box { --state: var(--red); }
+    body[data-mode="blackout"] .alarm-box { --state: var(--red-hot); }
+
+    .warn-tri {
+      width: 62px;
+      height: 54px;
+      clip-path: polygon(50% 0, 0 100%, 100% 100%);
+      background: currentColor;
+      display: grid;
+      place-items: center;
+      filter: drop-shadow(0 0 14px color-mix(in srgb, currentColor 44%, transparent));
+      animation: triPulse 1.42s steps(2, end) infinite;
+    }
+
+    .warn-tri span {
+      color: #070300;
+      font-family: Impact, var(--font-ui), sans-serif;
+      font-size: 32px;
+      line-height: 1;
+      transform: translateY(3px);
+    }
+
+    @keyframes triPulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: .56; }
+    }
+
+    .status-word {
+      color: currentColor;
+      font-size: clamp(38px, 4.8vw, 62px);
+      line-height: .78;
+      letter-spacing: .11em;
+      text-shadow: 0 0 16px color-mix(in srgb, currentColor 34%, transparent);
+    }
+
+    .alarm-subline {
+      margin-top: 7px;
+      color: var(--text-dim);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+    }
+
+    .right-readout {
+      text-align: right;
+      display: grid;
+      gap: 5px;
+      align-content: center;
+    }
+
+    .right-readout .rowline {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 18px;
+      border-bottom: 1px solid rgba(233, 164, 47, .18);
+      padding-bottom: 4px;
+      color: var(--text-dim);
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+    }
+
+    .right-readout b { color: var(--amber-hot); font-weight: 700; }
+
+    .live-dot {
+      display: inline-block;
+      width: 9px;
+      height: 9px;
+      margin-left: 5px;
+      border-radius: 50%;
+      background: var(--cyan-hot);
+      box-shadow: 0 0 10px rgba(40, 241, 214, .8);
+      animation: statusBlink 1.1s steps(2, end) infinite;
+    }
+
+    body[data-mode="emergency"] .live-dot,
+    body[data-mode="blackout"] .live-dot { background: var(--red); box-shadow: 0 0 10px rgba(255, 77, 79, .85); }
+
+    @keyframes statusBlink { 50% { opacity: .25; } }
+
+    .marquee {
+      position: relative;
+      z-index: 1;
+      min-height: 31px;
+      margin: 8px 0;
+      border-block: 1px solid rgba(233, 164, 47, .55);
+      overflow: hidden;
+      color: var(--amber-hot);
+      background:
+        repeating-linear-gradient(90deg, rgba(233, 164, 47, .18) 0 3px, transparent 3px 15px),
+        rgba(6, 4, 0, .85);
+    }
+
+    .marquee-track {
+      display: flex;
+      width: max-content;
+      gap: 28px;
+      padding: 7px 0 6px;
+      white-space: nowrap;
+      animation: marqueeMove 23s linear infinite;
+    }
+
+    .marquee span {
+      font-family: var(--font-ui);
+      font-size: 12px;
+      letter-spacing: .16em;
+      text-transform: uppercase;
+      text-shadow: 0 0 7px rgba(255, 176, 0, .24);
+    }
+
+    @keyframes marqueeMove {
+      to { transform: translateX(-50%); }
+    }
+
+    .grid-main {
+      display: grid;
+      grid-template-columns: minmax(315px, .88fr) minmax(430px, 1.16fr) minmax(315px, .92fr);
+      gap: 8px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .stack {
+      display: grid;
+      gap: 8px;
+      min-width: 0;
+    }
+
+    .panel {
+      position: relative;
+      min-width: 0;
+      border: 1px solid rgba(233, 164, 47, .58);
+      background:
+        linear-gradient(180deg, rgba(233, 164, 47, .035), transparent 27%),
+        rgba(3, 2, 0, .93);
+      box-shadow: 0 0 0 1px rgba(0, 0, 0, .80) inset, 0 0 20px rgba(233, 164, 47, .045);
+      overflow: hidden;
+      color: var(--amber);
+    }
+
+    .panel.cyan-frame {
+      border-color: rgba(142, 229, 207, .56);
+      box-shadow: 0 0 0 1px rgba(0, 0, 0, .80) inset, 0 0 18px rgba(142, 229, 207, .055);
+      color: var(--cyan);
+    }
+
+    .panel.red-frame {
+      border-color: rgba(255, 77, 79, .64);
+      color: var(--red);
+      box-shadow: 0 0 22px rgba(255, 77, 79, .08), inset 0 0 0 1px rgba(0,0,0,.8);
+    }
+
+    .panel.reading {
+      animation: panelAcknowledge .88s steps(4, end) 1;
+    }
+
+    .panel.reading .read-sweep {
+      animation: readSweep .86s linear 1;
+    }
+
+    @keyframes panelAcknowledge {
+      0% { filter: brightness(1); }
+      18% { filter: brightness(1.35); }
+      44% { filter: brightness(.92); }
+      100% { filter: brightness(1); }
+    }
+
+    .read-sweep {
+      position: absolute;
+      inset: 0 auto 0 0;
+      width: 28%;
+      background: linear-gradient(90deg, transparent, rgba(142, 229, 207, .20), transparent);
+      transform: translateX(-130%);
+      opacity: 0;
+      pointer-events: none;
+      mix-blend-mode: screen;
+      z-index: 5;
+    }
+
+    @keyframes readSweep {
+      0% { transform: translateX(-130%); opacity: 0; }
+      15% { opacity: 1; }
+      82% { opacity: .42; }
+      100% { transform: translateX(460%); opacity: 0; }
+    }
+
+    .panel-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      min-height: 37px;
+      padding: 8px 11px 6px 30px;
+      border-bottom: 1px solid rgba(233, 164, 47, .32);
+      background:
+        linear-gradient(90deg, rgba(233, 164, 47, .10), transparent 58%),
+        rgba(0, 0, 0, .20);
+    }
+
+    .cyan-frame .panel-head { border-bottom-color: rgba(142, 229, 207, .26); background: linear-gradient(90deg, rgba(142,229,207,.075), transparent 58%); }
+    .red-frame .panel-head { border-bottom-color: rgba(255,77,79,.30); background: linear-gradient(90deg, rgba(255,77,79,.08), transparent 58%); }
+
+    .panel-title {
+      color: currentColor;
+      font-size: 13px;
+      line-height: 1;
+      letter-spacing: .15em;
+      text-shadow: 0 0 8px color-mix(in srgb, currentColor 30%, transparent);
+      white-space: nowrap;
+    }
+
+    .panel-code {
+      color: var(--text-dim);
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      white-space: nowrap;
+    }
+
+    .panel-body {
+      position: relative;
+      padding: 10px;
+    }
+
+    .canvas-wrap {
+      position: relative;
+      height: clamp(250px, 33vh, 394px);
+      min-height: 250px;
+      background: #000;
+      border: 1px solid rgba(233, 164, 47, .24);
+      overflow: hidden;
+    }
+
+    .canvas-wrap canvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .canvas-overlay-label {
+      position: absolute;
+      left: 12px;
+      top: 9px;
+      color: var(--amber-hot);
+      font-family: var(--font-ui);
+      text-transform: uppercase;
+      letter-spacing: .12em;
+      font-size: 12px;
+      text-shadow: 0 0 8px rgba(255, 176, 0, .40);
+      z-index: 1;
+    }
+
+    .canvas-mini-stamp {
+      position: absolute;
+      right: 10px;
+      top: 8px;
+      z-index: 1;
+      color: var(--cyan);
+      border: 1px dotted currentColor;
+      padding: 4px 7px 3px;
+      font-size: 9px;
+      text-transform: uppercase;
+      letter-spacing: .11em;
+      background: rgba(0,0,0,.44);
+      animation: stampPulse 2.6s steps(2, end) infinite;
+    }
+
+    @keyframes stampPulse { 50% { opacity: .46; } }
+
+    .axis-rail {
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 48px;
+      border-right: 1px solid rgba(233, 164, 47, .30);
+      background: linear-gradient(90deg, rgba(233, 164, 47, .08), transparent);
+      pointer-events: none;
+    }
+
+    .psych-footer {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+      margin-top: 8px;
+    }
+
+    .mini-tile {
+      border: 1px solid rgba(233, 164, 47, .30);
+      padding: 8px;
+      background: rgba(0, 0, 0, .36);
+      min-width: 0;
+    }
+
+    .mini-tile b {
+      display: block;
+      color: var(--amber-hot);
+      font-family: var(--font-ui);
+      font-size: 20px;
+      line-height: .9;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+
+    .mini-tile span {
+      display: block;
+      margin-top: 4px;
+      color: var(--text-dim);
+      font-size: 9px;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .ceremony {
+      padding: 12px;
+      min-height: 196px;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 160px;
+      gap: 12px;
+    }
+
+    .serif-card {
+      border: 1px solid rgba(233, 164, 47, .40);
+      padding: 12px;
+      background:
+        linear-gradient(135deg, rgba(233, 164, 47, .09), transparent 42%),
+        rgba(0, 0, 0, .42);
+      min-width: 0;
+      overflow: hidden;
+    }
+
+    .alarm-title {
+      display: inline-block;
+      color: var(--paper);
+      font-family: var(--font-display);
+      font-size: clamp(30px, 5.5vw, 64px);
+      font-weight: 900;
+      line-height: .82;
+      letter-spacing: .055em;
+      text-transform: uppercase;
+      transform: scaleX(.82);
+      transform-origin: left center;
+      text-shadow: 0 0 16px rgba(255, 176, 0, .16);
+    }
+
+    .ceremony-copy {
+      margin-top: 12px;
+      display: grid;
+      gap: 7px;
+      color: var(--text-dim);
+      font-size: 11px;
+      line-height: 1.35;
+      text-transform: uppercase;
+      letter-spacing: .07em;
+    }
+
+    .ceremony-copy strong { color: var(--amber-hot); }
+
+    .vertical-scale {
+      display: grid;
+      gap: 7px;
+      align-content: stretch;
+    }
+
+    .scale-item {
+      position: relative;
+      display: grid;
+      align-items: end;
+      min-height: 36px;
+      border: 1px solid rgba(142, 229, 207, .32);
+      background:
+        repeating-linear-gradient(90deg, transparent 0 7px, rgba(142,229,207,.16) 7px 9px, transparent 9px 16px),
+        rgba(0, 0, 0, .38);
+      overflow: hidden;
+    }
+
+    .scale-item::before {
+      content: "";
+      position: absolute;
+      inset: auto 0 0 0;
+      height: var(--fill, 60%);
+      background: linear-gradient(180deg, rgba(142,229,207,.20), rgba(142,229,207,.05));
+      border-top: 1px solid var(--cyan);
+      box-shadow: 0 0 8px rgba(142,229,207,.22);
+      transition: height .32s steps(4, end);
+    }
+
+    .scale-item span {
+      position: relative;
+      padding: 0 7px 5px;
+      color: var(--cyan);
+      font-size: 9px;
+      text-align: right;
+      text-transform: uppercase;
+      letter-spacing: .09em;
+    }
+
+    .magi-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+    }
+
+    .magi-card {
+      position: relative;
+      padding: 10px;
+      min-height: 116px;
+      border: 1px solid rgba(142, 229, 207, .38);
+      background:
+        linear-gradient(180deg, rgba(142, 229, 207, .055), transparent 38%),
+        rgba(0, 0, 0, .54);
+      overflow: hidden;
+      color: var(--cyan);
+    }
+
+    .magi-card.warning {
+      border-color: rgba(233, 164, 47, .52);
+      color: var(--amber-hot);
+    }
+
+    .magi-card.failure {
+      border-color: rgba(255,77,79,.60);
+      color: var(--red);
+    }
+
+    .magi-card::before {
+      content: attr(data-index);
+      position: absolute;
+      right: 8px;
+      top: 6px;
+      color: currentColor;
+      opacity: .25;
+      font-family: var(--font-ui);
+      font-size: 54px;
+      line-height: .8;
+      letter-spacing: -.03em;
+    }
+
+    .magi-name {
+      position: relative;
+      color: currentColor;
+      font-family: var(--font-ui);
+      font-size: 24px;
+      line-height: .82;
+      letter-spacing: .10em;
+      text-transform: uppercase;
+      text-shadow: 0 0 8px color-mix(in srgb, currentColor 28%, transparent);
+    }
+
+    .magi-sub {
+      position: relative;
+      margin-top: 7px;
+      color: var(--text-dim);
+      font-size: 9px;
+      text-transform: uppercase;
+      letter-spacing: .10em;
+    }
+
+    .telemetry-bar {
+      --value: 62%;
+      --bar-color: var(--cyan);
+      position: relative;
+      height: 16px;
+      margin-top: 13px;
+      background: rgba(255, 122, 0, .08);
+      border-inline: 1px solid rgba(233, 164, 47, .24);
+      overflow: hidden;
+    }
+
+    .telemetry-bar .fill {
+      position: absolute;
+      inset: 0 auto 0 0;
+      width: var(--value);
+      background:
+        repeating-linear-gradient(
+          -58deg,
+          var(--bar-color) 0 9px,
+          transparent 9px 12px
+        );
+      background-color: color-mix(in srgb, var(--bar-color) 11%, transparent);
+      filter: drop-shadow(0 0 8px color-mix(in srgb, var(--bar-color) 35%, transparent));
+      transition: width .32s steps(4, end);
+      animation: barPhase 2.1s steps(6, end) infinite;
+    }
+
+    .telemetry-bar.warning { --bar-color: var(--amber-hot); }
+    .telemetry-bar.failure { --bar-color: var(--red); }
+
+    .telemetry-bar.warning::after,
+    .telemetry-bar.failure::after {
+      content: "";
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      right: 0;
+      width: 13px;
+      background: var(--orange);
+      animation: endcapBlink 1s steps(2, end) infinite;
+    }
+
+    .telemetry-bar.failure::after { background: var(--red); }
+
+    @keyframes barPhase { to { background-position: 12px 0; } }
+    @keyframes endcapBlink { 50% { opacity: .36; } }
+
+    .magi-meta {
+      position: relative;
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      margin-top: 8px;
+      color: var(--text-dim);
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: .07em;
+    }
+
+    .magi-meta b { color: currentColor; }
+
+    .wire-wrap {
+      height: clamp(305px, 42vh, 462px);
+      min-height: 305px;
+      border-color: rgba(142, 229, 207, .22);
+    }
+
+    .right-metrics {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .metric-card {
+      min-height: 72px;
+      padding: 9px;
+      border: 1px solid rgba(142, 229, 207, .30);
+      background: rgba(0, 0, 0, .42);
+      color: var(--cyan);
+    }
+
+    .metric-card.amber {
+      color: var(--amber-hot);
+      border-color: rgba(233, 164, 47, .32);
+    }
+
+    .metric-card.red {
+      color: var(--red);
+      border-color: rgba(255, 77, 79, .42);
+    }
+
+    .metric-card span {
+      display: block;
+      color: var(--text-dim);
+      font-size: 9px;
+      letter-spacing: .10em;
+      text-transform: uppercase;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .metric-card b {
+      display: block;
+      margin-top: 9px;
+      font-family: var(--font-ui);
+      font-size: 28px;
+      line-height: .88;
+      letter-spacing: .09em;
+      text-transform: uppercase;
+      color: currentColor;
+      text-shadow: 0 0 8px color-mix(in srgb, currentColor 26%, transparent);
+    }
+
+    .signal-strip {
+      display: grid;
+      grid-template-columns: 1fr 92px;
+      gap: 8px;
+      padding: 10px;
+    }
+
+    .signal-bars {
+      display: grid;
+      gap: 8px;
+    }
+
+    .signal-row {
+      display: grid;
+      grid-template-columns: 92px 1fr 54px;
+      align-items: center;
+      gap: 8px;
+      min-height: 24px;
+      color: var(--cyan);
+    }
+
+    .signal-row.warn { color: var(--amber-hot); }
+    .signal-row.fail { color: var(--red); }
+
+    .signal-row .label {
+      color: currentColor;
+      font-size: 10px;
+      white-space: nowrap;
+    }
+
+    .signal-row .value {
+      color: currentColor;
+      text-align: right;
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    .microbar {
+      position: relative;
+      height: 12px;
+      background: rgba(233, 164, 47, .08);
+      overflow: hidden;
+      border: 1px solid rgba(233, 164, 47, .20);
+    }
+
+    .microbar::before {
+      content: "";
+      position: absolute;
+      inset: 0 auto 0 0;
+      width: var(--value, 50%);
+      background: repeating-linear-gradient(-58deg, currentColor 0 6px, transparent 6px 9px);
+      transition: width .32s steps(4, end);
+    }
+
+    .seal-panel {
+      position: relative;
+      display: grid;
+      place-items: center;
+      border: 1px solid rgba(233, 164, 47, .30);
+      background: rgba(0, 0, 0, .50);
+      overflow: hidden;
+    }
+
+    .seal-panel::before,
+    .seal-panel::after {
+      content: "";
+      position: absolute;
+      border: 1px solid rgba(233, 164, 47, .25);
+      border-radius: 50%;
+    }
+
+    .seal-panel::before { width: 68px; height: 68px; }
+    .seal-panel::after { width: 48px; height: 48px; border-color: rgba(142,229,207,.22); }
+
+    .seal-text {
+      position: relative;
+      color: var(--amber-hot);
+      font-family: var(--font-ui);
+      font-size: 19px;
+      line-height: .82;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      text-align: center;
+      transform: scaleX(.86);
+      text-shadow: 0 0 8px rgba(255,176,0,.22);
+      z-index: 1;
+    }
+
+    .lower-grid {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      grid-template-columns: minmax(360px, 1.05fr) minmax(340px, .95fr) minmax(315px, .82fr);
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .timeline {
+      padding: 10px;
+    }
+
+    .event-log {
+      display: grid;
+      gap: 5px;
+      max-height: 214px;
+      overflow: hidden;
+    }
+
+    .log-row {
+      display: grid;
+      grid-template-columns: 70px 26px 1fr 68px;
+      gap: 8px;
+      align-items: center;
+      min-height: 24px;
+      padding: 3px 0;
+      border-bottom: 1px solid rgba(233, 164, 47, .15);
+      color: var(--text-dim);
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+    }
+
+    .log-row strong { color: var(--amber-hot); font-weight: 700; }
+    .log-row .ok { color: var(--cyan); }
+    .log-row .warn { color: var(--amber-hot); }
+    .log-row .fail { color: var(--red); }
+
+    .state-shape {
+      display: inline-block;
+      justify-self: center;
+      filter: drop-shadow(0 0 6px currentColor);
+    }
+
+    .state-shape.square { width: 11px; height: 11px; background: currentColor; color: var(--cyan); }
+    .state-shape.triangle { width: 0; height: 0; border-left: 8px solid transparent; border-right: 8px solid transparent; border-bottom: 14px solid currentColor; color: var(--amber-hot); }
+    .state-shape.dot { width: 12px; height: 12px; border-radius: 50%; background: currentColor; color: var(--red); animation: statusBlink .86s steps(2,end) infinite; }
+
+    .classification-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
+      padding: 10px;
+    }
+
+    .class-cell {
+      min-height: 54px;
+      padding: 7px 7px 5px;
+      border: 1px solid rgba(233, 164, 47, .30);
+      background: rgba(0, 0, 0, .38);
+      color: var(--amber-hot);
+      overflow: hidden;
+    }
+
+    .class-cell.cyan { color: var(--cyan); border-color: rgba(142,229,207,.32); }
+    .class-cell.red { color: var(--red); border-color: rgba(255,77,79,.42); }
+
+    .class-cell span {
+      display: block;
+      color: var(--text-dim);
+      font-size: 8px;
+      text-transform: uppercase;
+      letter-spacing: .10em;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .class-cell b {
+      display: block;
+      margin-top: 9px;
+      font-family: var(--font-ui);
+      color: currentColor;
+      font-size: 24px;
+      line-height: .8;
+      letter-spacing: .09em;
+      text-transform: uppercase;
+    }
+
+    .control-pad {
+      padding: 10px;
+      display: grid;
+      gap: 8px;
+    }
+
+    .control {
+      position: relative;
+      min-height: 42px;
+      padding: 8px 12px;
+      border: 1px dashed rgba(233, 164, 47, .42);
+      background: rgba(0,0,0,.34);
+      color: var(--amber-hot);
+      cursor: pointer;
+      text-transform: uppercase;
+      letter-spacing: .10em;
+      transition: color .08s steps(2,end), background .08s steps(2,end), box-shadow .08s steps(2,end), border-color .08s steps(2,end);
+    }
+
+    .control:hover,
+    .control:focus-visible {
+      color: #050300;
+      background: var(--amber-hot);
+      border-color: var(--amber-hot);
+      box-shadow: 0 0 17px rgba(255,176,0,.22);
+      outline: none;
+    }
+
+    .control.danger { color: var(--red); border-color: rgba(255,77,79,.52); }
+    .control.danger:hover,
+    .control.danger:focus-visible { background: var(--red); border-color: var(--red); color: #050300; box-shadow: 0 0 17px rgba(255,77,79,.25); }
+    .control.cyan { color: var(--cyan); border-color: rgba(142,229,207,.44); }
+    .control.cyan:hover,
+    .control.cyan:focus-visible { background: var(--cyan); border-color: var(--cyan); color: #050300; box-shadow: 0 0 17px rgba(142,229,207,.22); }
+
+    .ctrl-title {
+      display: block;
+      color: currentColor;
+      font-size: 11px;
+      line-height: 1;
+    }
+
+    .ctrl-note {
+      display: block;
+      margin-top: 5px;
+      color: currentColor;
+      opacity: .68;
+      font-size: 9px;
+      line-height: 1.2;
+      letter-spacing: .08em;
+    }
+
+    .footer {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      margin-top: 8px;
+      padding-top: 7px;
+      border-top: 1px solid rgba(233, 164, 47, .32);
+      color: var(--text-dim);
+      font-size: 9px;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+    }
+
+    .flash {
+      animation: valueFlash .30s steps(2, end) 2;
+    }
+
+    @keyframes valueFlash {
+      0% { opacity: 1; filter: brightness(1); }
+      50% { opacity: .25; filter: brightness(2); }
+      100% { opacity: 1; filter: brightness(1); }
+    }
+
+    body[data-mode="emergency"] .screen,
+    body[data-mode="blackout"] .screen {
+      animation: emergencyBreath 1.2s steps(2,end) infinite;
+    }
+
+    @keyframes emergencyBreath {
+      50% { box-shadow: 0 0 0 1px rgba(255,77,79,.28) inset, 0 0 80px rgba(255,77,79,.09), 0 0 130px rgba(0,0,0,.95) inset; }
+    }
+
+    body[data-mode="blackout"] .panel:not(.red-frame),
+    body[data-mode="blackout"] .header-section:not(.alarm-box) {
+      opacity: .62;
+      filter: saturate(.55) brightness(.78);
+    }
+
+    @media (max-width: 1180px) {
+      .header,
+      .grid-main,
+      .lower-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .right-readout { text-align: left; }
+      .ceremony { grid-template-columns: 1fr; }
+      .vertical-scale { grid-template-columns: repeat(3, 1fr); }
+      .wire-wrap { height: 360px; }
+    }
+
+    @media (max-width: 720px) {
+      .screen { width: calc(100vw - 8px); margin: 4px auto; padding: 7px; }
+      .header-section { min-height: auto; }
+      .alarm-box { grid-template-columns: 52px 1fr; }
+      .warn-tri { width: 48px; height: 42px; }
+      .warn-tri span { font-size: 25px; transform: translateY(2px); }
+      .magi-grid,
+      .classification-grid,
+      .psych-footer,
+      .right-metrics { grid-template-columns: 1fr; }
+      .signal-strip { grid-template-columns: 1fr; }
+      .signal-row { grid-template-columns: 70px 1fr 48px; }
+      .log-row { grid-template-columns: 58px 22px 1fr; }
+      .log-row span:last-child { display: none; }
+      .footer { flex-direction: column; }
+      .canvas-wrap { height: 310px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: .001ms !important;
+        animation-iteration-count: 1 !important;
+        scroll-behavior: auto !important;
+        transition-duration: .001ms !important;
+      }
+
+      .marquee-track { transform: none !important; }
+    }
+  </style>
+</head>
+<body data-mode="degraded">
+  <div class="boot-card" aria-hidden="true">
+    <div class="boot-box">
+      <div class="kicker">Vector CRT demonstration // private monitor</div>
+      <div class="boot-title">System Initiated</div>
+      <div class="subtitle-line"><span>CASPER: OK</span><span>BALTHASAR: HOLD</span><span>MELCHIOR: LINK</span><span>PHASE 04</span></div>
+      <div class="boot-grid">
+        <span style="--i:0"></span><span style="--i:1"></span><span style="--i:2"></span><span style="--i:3"></span>
+        <span style="--i:4"></span><span style="--i:5"></span><span style="--i:6"></span><span style="--i:7"></span>
+      </div>
+    </div>
+  </div>
+
+  <main class="screen" id="screen" aria-label="NERV style vector CRT operations demo">
+    <span class="crt-band b1" aria-hidden="true"></span>
+    <span class="crt-band b2" aria-hidden="true"></span>
+
+    <header class="header" aria-label="Command header">
+      <section class="header-section">
+        <div class="kicker">NERV-style // tactical UI study</div>
+        <h1>Operations Display</h1>
+        <div class="subtitle-line"><span>Black-first vector CRT</span><span>stepped telemetry</span><span>event-driven motion</span></div>
+      </section>
+
+      <section class="header-section alarm-box" aria-label="Global system state">
+        <div class="warn-tri" aria-hidden="true"><span>!</span></div>
+        <div>
+          <div class="kicker">Overall system status</div>
+          <div class="status-word" id="globalState">Degraded</div>
+          <div class="alarm-subline" id="stateSubline">Phase 4 // Link A // Psychograph unstable</div>
+        </div>
+      </section>
+
+      <section class="header-section right-readout" aria-label="Live session metrics">
+        <div class="rowline"><span>Current UTC</span><b id="clock">----.--.-- --:--:--</b></div>
+        <div class="rowline"><span>Poll countdown</span><b><span id="poll">12</span>s <span class="live-dot" aria-hidden="true"></span></b></div>
+        <div class="rowline"><span>Operator token</span><b>PRIVATE / ROOT</b></div>
+        <div class="rowline"><span>Pattern vector</span><b id="patternText">BLUE + ORANGE</b></div>
+      </section>
+    </header>
+
+    <section class="marquee" aria-label="System warning ticker">
+      <div class="marquee-track">
+        <span>Unauthorized access prohibited</span>
+        <span>MAGI quorum monitoring active</span>
+        <span>Sync trace linked to pilot memory bus</span>
+        <span>Emergency overlays armed</span>
+        <span>Telemetry rendered as vector primitives</span>
+        <span>Unauthorized access prohibited</span>
+        <span>MAGI quorum monitoring active</span>
+        <span>Sync trace linked to pilot memory bus</span>
+        <span>Emergency overlays armed</span>
+        <span>Telemetry rendered as vector primitives</span>
+      </div>
+    </section>
+
+    <section class="grid-main" aria-label="Primary demo panels">
+      <aside class="stack">
+        <article class="panel" data-panel="psychograph">
+          <span class="read-sweep" aria-hidden="true"></span>
+          <div class="panel-head">
+            <h2 class="panel-title">Psychographic Display</h2>
+            <span class="panel-code">Phase 04 // Link A</span>
+          </div>
+          <div class="panel-body">
+            <div class="canvas-wrap" aria-label="Animated orange psychographic vector trace with cyan registration marks">
+              <span class="axis-rail" aria-hidden="true"></span>
+              <span class="canvas-overlay-label">Pilot neural trace</span>
+              <span class="canvas-mini-stamp">Data analyzed</span>
+              <canvas id="psychograph"></canvas>
+            </div>
+            <div class="psych-footer">
+              <div class="mini-tile"><b data-live="sync" data-min="68" data-max="86" data-unit="%">74.3%</b><span>sync ratio</span></div>
+              <div class="mini-tile"><b data-live="noise" data-min="11" data-max="28" data-unit="db">18db</b><span>cortical noise</span></div>
+              <div class="mini-tile"><b data-live="depth" data-min="3" data-max="9" data-unit="m">06m</b><span>entry depth</span></div>
+            </div>
+          </div>
+        </article>
+
+        <article class="panel cyan-frame" data-panel="signal">
+          <span class="read-sweep" aria-hidden="true"></span>
+          <div class="panel-head">
+            <h2 class="panel-title">Signal Bus</h2>
+            <span class="panel-code">route / 12 open</span>
+          </div>
+          <div class="signal-strip">
+            <div class="signal-bars">
+              <div class="signal-row"><span class="label">Neural</span><span class="microbar" style="--value: 82%"></span><span class="value" data-live="neural" data-min="70" data-max="91" data-unit="%">82%</span></div>
+              <div class="signal-row warn"><span class="label">AT Field</span><span class="microbar" style="--value: 64%"></span><span class="value" data-live="at" data-min="51" data-max="73" data-unit="%">64%</span></div>
+              <div class="signal-row"><span class="label">LCL Flow</span><span class="microbar" style="--value: 91%"></span><span class="value" data-live="lcl" data-min="84" data-max="98" data-unit="%">91%</span></div>
+              <div class="signal-row fail"><span class="label">Dummy</span><span class="microbar" style="--value: 22%"></span><span class="value" data-live="dummy" data-min="18" data-max="36" data-unit="%">22%</span></div>
+            </div>
+            <div class="seal-panel" aria-hidden="true"><div class="seal-text">NERV<br />Style<br />Demo</div></div>
+          </div>
+        </article>
+      </aside>
+
+      <section class="stack">
+        <article class="panel red-frame" data-panel="ceremony">
+          <span class="read-sweep" aria-hidden="true"></span>
+          <div class="ceremony">
+            <div class="serif-card">
+              <div class="kicker">Emergency title-card voice // reserved use</div>
+              <div class="alarm-title">Protocol Engaged</div>
+              <div class="ceremony-copy">
+                <p><strong>Design objective:</strong> black void, hard amber geometry, cyan live data, red only for fault states.</p>
+                <p><strong>Motion rule:</strong> no generic smooth gloss; each sweep acknowledges a simulated data event.</p>
+              </div>
+            </div>
+            <div class="vertical-scale" aria-label="Three live vertical telemetry gauges">
+              <div class="scale-item" style="--fill: 76%"><span>Sync 76</span></div>
+              <div class="scale-item" style="--fill: 58%"><span>Load 58</span></div>
+              <div class="scale-item" style="--fill: 34%"><span>Risk 34</span></div>
+            </div>
+          </div>
+        </article>
+
+        <article class="panel cyan-frame" data-panel="magi">
+          <span class="read-sweep" aria-hidden="true"></span>
+          <div class="panel-head">
+            <h2 class="panel-title">MAGI Quorum Emulation</h2>
+            <span class="panel-code">3-node counsel</span>
+          </div>
+          <div class="panel-body">
+            <div class="magi-grid">
+              <div class="magi-card" data-index="01">
+                <div class="magi-name">Casper</div>
+                <div class="magi-sub">logic core / nominal</div>
+                <div class="telemetry-bar" style="--value: 92%"><span class="fill"></span></div>
+                <div class="magi-meta"><span>vote</span><b>accept</b></div>
+              </div>
+              <div class="magi-card warning" data-index="02">
+                <div class="magi-name">Balthasar</div>
+                <div class="magi-sub">defense core / watch</div>
+                <div class="telemetry-bar warning" style="--value: 68%"><span class="fill"></span></div>
+                <div class="magi-meta"><span>vote</span><b>hold</b></div>
+              </div>
+              <div class="magi-card failure" data-index="03">
+                <div class="magi-name">Melchior</div>
+                <div class="magi-sub">human core / reject</div>
+                <div class="telemetry-bar failure" style="--value: 41%"><span class="fill"></span></div>
+                <div class="magi-meta"><span>vote</span><b>deny</b></div>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="panel" data-panel="classification">
+          <span class="read-sweep" aria-hidden="true"></span>
+          <div class="panel-head">
+            <h2 class="panel-title">Compatibility Table</h2>
+            <span class="panel-code">live values / demo</span>
+          </div>
+          <div class="classification-grid">
+            <div class="class-cell cyan"><span>pilot sync</span><b data-live="class1" data-min="71" data-max="89" data-unit="%">78%</b></div>
+            <div class="class-cell"><span>phase delta</span><b data-live="class2" data-min="4" data-max="13" data-unit="°">08°</b></div>
+            <div class="class-cell red"><span>harmonics</span><b data-live="class3" data-min="2" data-max="9" data-unit="x">05x</b></div>
+            <div class="class-cell cyan"><span>reserve</span><b data-live="class4" data-min="44" data-max="62" data-unit="%">55%</b></div>
+            <div class="class-cell"><span>memory</span><b data-live="class5" data-min="80" data-max="97" data-unit="%">91%</b></div>
+            <div class="class-cell cyan"><span>grid lock</span><b data-live="class6" data-min="90" data-max="100" data-unit="%">96%</b></div>
+            <div class="class-cell"><span>poll</span><b id="pollGrid">12s</b></div>
+            <div class="class-cell red"><span>hazard</span><b id="hazardValue">D-04</b></div>
+          </div>
+        </article>
+      </section>
+
+      <aside class="stack">
+        <article class="panel cyan-frame" data-panel="wire">
+          <span class="read-sweep" aria-hidden="true"></span>
+          <div class="panel-head">
+            <h2 class="panel-title">3D Wireframe Correlator</h2>
+            <span class="panel-code">synthetic memory mesh</span>
+          </div>
+          <div class="panel-body">
+            <div class="canvas-wrap wire-wrap" aria-label="Cyan perspective grid with orange neural network arcs">
+              <span class="canvas-overlay-label" style="color: var(--cyan)">Sensor topology</span>
+              <span class="canvas-mini-stamp">Vector scan</span>
+              <canvas id="wireframe"></canvas>
+            </div>
+            <div class="right-metrics">
+              <div class="metric-card"><span>mesh nodes</span><b data-live="nodes" data-min="118" data-max="148" data-unit="">132</b></div>
+              <div class="metric-card amber"><span>latency</span><b data-live="latency" data-min="74" data-max="132" data-unit="ms">96ms</b></div>
+              <div class="metric-card"><span>route open</span><b data-live="route" data-min="8" data-max="12" data-unit="/12">10/12</b></div>
+              <div class="metric-card red"><span>faults</span><b data-live="faults" data-min="1" data-max="4" data-unit="">03</b></div>
+            </div>
+          </div>
+        </article>
+      </aside>
+    </section>
+
+    <section class="lower-grid" aria-label="Logs, controls, and classification panels">
+      <article class="panel" data-panel="log">
+        <span class="read-sweep" aria-hidden="true"></span>
+        <div class="panel-head">
+          <h2 class="panel-title">Event Trace</h2>
+          <span class="panel-code" id="traceCode">queue / live</span>
+        </div>
+        <div class="timeline">
+          <div class="event-log" id="eventLog" aria-live="polite">
+            <div class="log-row"><strong>00:00:12</strong><span class="state-shape triangle"></span><span>Psychograph display exceeded tolerance</span><span class="warn">warn</span></div>
+            <div class="log-row"><strong>00:00:09</strong><span class="state-shape square"></span><span>Cyan telemetry rails registered</span><span class="ok">ok</span></div>
+            <div class="log-row"><strong>00:00:06</strong><span class="state-shape dot"></span><span>Dummy plug interface denied</span><span class="fail">fail</span></div>
+            <div class="log-row"><strong>00:00:03</strong><span class="state-shape square"></span><span>Operator token accepted</span><span class="ok">ok</span></div>
+          </div>
+        </div>
+      </article>
+
+      <article class="panel cyan-frame" data-panel="readout">
+        <span class="read-sweep" aria-hidden="true"></span>
+        <div class="panel-head">
+          <h2 class="panel-title">Readout Discipline</h2>
+          <span class="panel-code">shape + color + text</span>
+        </div>
+        <div class="classification-grid">
+          <div class="class-cell cyan"><span>operational</span><b>■ UP</b></div>
+          <div class="class-cell"><span>degraded</span><b>▲ HOLD</b></div>
+          <div class="class-cell red"><span>failure</span><b>● DOWN</b></div>
+          <div class="class-cell"><span>mode</span><b id="modeCell">DGRD</b></div>
+          <div class="class-cell cyan"><span>contrast</span><b>PASS</b></div>
+          <div class="class-cell"><span>motion</span><b>STEP</b></div>
+          <div class="class-cell"><span>texture</span><b>LOW</b></div>
+          <div class="class-cell red"><span>red use</span><b>RARE</b></div>
+        </div>
+      </article>
+
+      <article class="panel red-frame" data-panel="controls">
+        <span class="read-sweep" aria-hidden="true"></span>
+        <div class="panel-head">
+          <h2 class="panel-title">Demo Controls</h2>
+          <span class="panel-code">interactive</span>
+        </div>
+        <div class="control-pad">
+          <button class="control cyan" data-action="nominal"><span class="ctrl-title">Set Nominal</span><span class="ctrl-note">cyan rails / stable quorum</span></button>
+          <button class="control" data-action="degraded"><span class="ctrl-title">Set Degraded</span><span class="ctrl-note">amber warnings / psychograph drift</span></button>
+          <button class="control danger" data-action="emergency"><span class="ctrl-title">Trigger Emergency</span><span class="ctrl-note">red fault stack / alarm pulse</span></button>
+          <button class="control" data-action="diagnostic"><span class="ctrl-title">Run Diagnostic Sweep</span><span class="ctrl-note">local event-driven panel reads</span></button>
+          <button class="control danger" data-action="blackout"><span class="ctrl-title">Simulate Blackout</span><span class="ctrl-note">reduced brightness / fault persistence</span></button>
+        </div>
+      </article>
+    </section>
+
+    <footer class="footer">
+      <span>Original fan-style interface demo // no official assets or logos embedded</span>
+      <span>Amber = structure/warning // cyan = live data // red = fault</span>
+    </footer>
+  </main>
+
+  <script>
+    (() => {
+      const body = document.body;
+      const screen = document.getElementById('screen');
+      const clock = document.getElementById('clock');
+      const poll = document.getElementById('poll');
+      const pollGrid = document.getElementById('pollGrid');
+      const globalState = document.getElementById('globalState');
+      const stateSubline = document.getElementById('stateSubline');
+      const patternText = document.getElementById('patternText');
+      const modeCell = document.getElementById('modeCell');
+      const traceCode = document.getElementById('traceCode');
+      const eventLog = document.getElementById('eventLog');
+      const panels = [...document.querySelectorAll('[data-panel]')];
+      const liveValues = [...document.querySelectorAll('[data-live]')];
+      const motionOK = !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      let pollRemaining = 12;
+      let lastRender = 0;
+      let mode = 'degraded';
+
+      const modes = {
+        nominal: {
+          label: 'Nominal', short: 'NOM', sub: 'Phase 2 // Link stable // Quorum accepted', pattern: 'CYAN / STABLE', log: 'Nominal mode accepted by operator'
+        },
+        degraded: {
+          label: 'Degraded', short: 'DGRD', sub: 'Phase 4 // Link A // Psychograph unstable', pattern: 'BLUE + ORANGE', log: 'Degraded monitoring restored'
+        },
+        emergency: {
+          label: 'Emergency', short: 'EMRG', sub: 'Phase 6 // Containment breach // Red stack armed', pattern: 'RED / CASCADE', log: 'Emergency fault stack triggered'
+        },
+        blackout: {
+          label: 'Blackout', short: 'BLK', sub: 'Phase 9 // Auxiliary vector only // Main bus offline', pattern: 'RED / AUXILIARY', log: 'Blackout simulation engaged'
+        }
+      };
+
+      function pad(n, size = 2) {
+        return String(n).padStart(size, '0');
+      }
+
+      function updateClock() {
+        const now = new Date();
+        clock.textContent = now.toISOString().slice(0, 19).replace('T', ' ');
+      }
+
+      function flash(el) {
+        if (!el) return;
+        el.classList.remove('flash');
+        void el.offsetWidth;
+        el.classList.add('flash');
+        window.setTimeout(() => el.classList.remove('flash'), 620);
+      }
+
+      function triggerRead(panel) {
+        if (!panel) return;
+        panel.classList.remove('reading');
+        void panel.offsetWidth;
+        panel.classList.add('reading');
+        window.setTimeout(() => panel.classList.remove('reading'), 940);
+      }
+
+      function addLog(text, state = 'warn') {
+        const now = new Date();
+        const shape = state === 'ok' ? 'square' : state === 'fail' ? 'dot' : 'triangle';
+        const row = document.createElement('div');
+        row.className = 'log-row';
+        row.innerHTML = `<strong>${pad(now.getUTCHours())}:${pad(now.getUTCMinutes())}:${pad(now.getUTCSeconds())}</strong><span class="state-shape ${shape}"></span><span>${text}</span><span class="${state}">${state}</span>`;
+        eventLog.prepend(row);
+        while (eventLog.children.length > 7) eventLog.lastElementChild.remove();
+        triggerRead(document.querySelector('[data-panel="log"]'));
+      }
+
+      function setMode(nextMode) {
+        mode = nextMode;
+        const data = modes[nextMode];
+        body.dataset.mode = nextMode;
+        globalState.textContent = data.label;
+        stateSubline.textContent = data.sub;
+        patternText.textContent = data.pattern;
+        modeCell.textContent = data.short;
+        flash(globalState);
+        flash(modeCell);
+        triggerRead(document.querySelector('[data-panel="ceremony"]'));
+        addLog(data.log, nextMode === 'nominal' ? 'ok' : nextMode === 'emergency' || nextMode === 'blackout' ? 'fail' : 'warn');
+      }
+
+      function tickPoll() {
+        pollRemaining -= 1;
+        if (pollRemaining <= 0) {
+          pollRemaining = 12;
+          const panel = panels[Math.floor(Math.random() * panels.length)];
+          triggerRead(panel);
+          addLog('Poll completed // local panel acknowledgement', mode === 'nominal' ? 'ok' : 'warn');
+        }
+        poll.textContent = pollRemaining;
+        pollGrid.textContent = `${pollRemaining}s`;
+      }
+
+      function formatValue(value, unit) {
+        if (unit === '%') return `${Math.round(value)}%`;
+        if (unit === 'ms') return `${Math.round(value)}ms`;
+        if (unit === 'db') return `${Math.round(value)}db`;
+        if (unit === 'm') return `${pad(Math.round(value))}m`;
+        if (unit === '°') return `${pad(Math.round(value))}°`;
+        if (unit === 'x') return `${pad(Math.round(value))}x`;
+        if (unit === '/12') return `${Math.round(value)}/12`;
+        return unit ? `${Math.round(value)}${unit}` : pad(Math.round(value));
+      }
+
+      function updateLiveValues() {
+        const multiplier = mode === 'nominal' ? 1 : mode === 'degraded' ? .92 : mode === 'blackout' ? .62 : .72;
+        liveValues.forEach((el, index) => {
+          const min = Number(el.dataset.min || 0);
+          const max = Number(el.dataset.max || 100);
+          const unit = el.dataset.unit || '';
+          let value = min + Math.random() * (max - min);
+          if (['sync', 'neural', 'lcl', 'class1', 'class6'].includes(el.dataset.live)) {
+            value = min + (value - min) * multiplier;
+          }
+          if (['faults', 'class3'].includes(el.dataset.live) && mode === 'emergency') value += 2;
+          const next = formatValue(value, unit);
+          if (el.textContent !== next) {
+            el.textContent = next;
+            flash(el);
+            const row = el.closest('.signal-row');
+            if (row) {
+              const bar = row.querySelector('.microbar');
+              if (bar) bar.style.setProperty('--value', `${Math.max(4, Math.min(100, value))}%`);
+            }
+          }
+          if (index % 7 === 0) triggerRead(el.closest('[data-panel]'));
+        });
+
+        document.querySelectorAll('.scale-item').forEach((item, index) => {
+          const value = 28 + Math.random() * 70;
+          item.style.setProperty('--fill', `${value.toFixed(0)}%`);
+          const label = ['Sync', 'Load', 'Risk'][index] || 'Data';
+          item.querySelector('span').textContent = `${label} ${value.toFixed(0)}`;
+        });
+
+        document.querySelectorAll('.telemetry-bar').forEach((bar, index) => {
+          const base = mode === 'nominal' ? 84 : mode === 'degraded' ? 62 : 38;
+          const spread = index === 0 ? 12 : index === 1 ? 20 : 28;
+          const value = Math.max(16, Math.min(96, base + Math.random() * spread - spread / 2));
+          bar.style.setProperty('--value', `${value.toFixed(0)}%`);
+        });
+      }
+
+      function randomDiagnostic() {
+        traceCode.textContent = `queue / ${pad(Math.floor(Math.random() * 99))}`;
+        const shuffled = [...panels].sort(() => Math.random() - .5).slice(0, 4);
+        shuffled.forEach((panel, index) => window.setTimeout(() => triggerRead(panel), index * 160));
+        addLog('Manual diagnostic sweep queued', 'ok');
+      }
+
+      document.querySelectorAll('[data-action]').forEach((button) => {
+        button.addEventListener('click', () => {
+          const action = button.dataset.action;
+          if (action === 'diagnostic') randomDiagnostic();
+          else setMode(action);
+        });
+      });
+
+      function createRng(seed) {
+        return function rng() {
+          let t = seed += 0x6D2B79F5;
+          t = Math.imul(t ^ t >>> 15, t | 1);
+          t ^= t + Math.imul(t ^ t >>> 7, t | 61);
+          return ((t ^ t >>> 14) >>> 0) / 4294967296;
+        };
+      }
+
+      const rng = createRng(19071995);
+      const psychWalkConfig = {
+        steps: 3200,
+        exitSteps: 140,
+        turnRange: .34,
+        stepScale: .028,
+        driftRate: .00022,
+        wallMargin: 18,
+        wallForce: .34,
+        smoothPasses: 3
+      };
+
+      const wireNodes = Array.from({ length: 34 }, () => ({
+        x: .24 + rng() * .52,
+        y: .08 + rng() * .40,
+        baseX: -3.8 + rng() * 7.6,
+        baseZ: 1.3 + rng() * 5.8,
+        phase: rng() * Math.PI * 2
+      }));
+
+      function fitCanvas(canvas) {
+        const rect = canvas.getBoundingClientRect();
+        const dpr = Math.min(window.devicePixelRatio || 1, 2);
+        const width = Math.max(280, Math.floor(rect.width * dpr));
+        const height = Math.max(220, Math.floor(rect.height * dpr));
+        if (canvas.width !== width || canvas.height !== height) {
+          canvas.width = width;
+          canvas.height = height;
+        }
+        const ctx = canvas.getContext('2d');
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        return { ctx, w: rect.width, h: rect.height };
+      }
+
+      function drawCrossGrid(ctx, w, h, t, color = 'rgba(142,229,207,.54)') {
+        ctx.save();
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 1;
+        const gapX = Math.max(62, w / 5.6);
+        const gapY = Math.max(52, h / 5.2);
+        for (let x = 62; x < w; x += gapX) {
+          for (let y = 42; y < h - 22; y += gapY) {
+            const pulse = Math.sin(t / 750 + x * .01 + y * .017) > .2 ? 1 : .45;
+            ctx.globalAlpha = .42 * pulse;
+            ctx.beginPath();
+            ctx.moveTo(x - 8, y);
+            ctx.lineTo(x + 8, y);
+            ctx.moveTo(x, y - 8);
+            ctx.lineTo(x, y + 8);
+            ctx.stroke();
+          }
+        }
+        ctx.restore();
+      }
+
+      function clamp(value, min, max) {
+        return Math.max(min, Math.min(max, value));
+      }
+
+      function drawSmoothTrace(ctx, points) {
+        if (!points || !points.length) return;
+        ctx.beginPath();
+        ctx.moveTo(points[0].x, points[0].y);
+        if (points.length === 2) {
+          ctx.lineTo(points[1].x, points[1].y);
+          return;
+        }
+        for (let i = 1; i < points.length - 1; i++) {
+          const midX = (points[i].x + points[i + 1].x) / 2;
+          const midY = (points[i].y + points[i + 1].y) / 2;
+          ctx.quadraticCurveTo(points[i].x, points[i].y, midX, midY);
+        }
+        const prev = points[points.length - 2];
+        const last = points[points.length - 1];
+        ctx.quadraticCurveTo(prev.x, prev.y, last.x, last.y);
+      }
+
+      function drawPolylineTrace(ctx, points) {
+        if (!points || !points.length) return;
+        ctx.beginPath();
+        ctx.moveTo(points[0].x, points[0].y);
+        for (let i = 1; i < points.length; i++) {
+          ctx.lineTo(points[i].x, points[i].y);
+        }
+      }
+
+      function smoothPath(points, passes = 2) {
+        let current = points.slice();
+        for (let pass = 0; pass < passes; pass++) {
+          if (current.length < 3) break;
+          const next = [current[0]];
+          for (let i = 1; i < current.length - 1; i++) {
+            const prev = current[i - 1];
+            const curr = current[i];
+            const after = current[i + 1];
+            next.push({
+              x: prev.x * .18 + curr.x * .64 + after.x * .18,
+              y: prev.y * .18 + curr.y * .64 + after.y * .18
+            });
+          }
+          next.push(current[current.length - 1]);
+          current = next;
+        }
+        return current;
+      }
+
+      function wrapAngle(angle) {
+        while (angle > Math.PI) angle -= Math.PI * 2;
+        while (angle < -Math.PI) angle += Math.PI * 2;
+        return angle;
+      }
+
+      function psychTurnNoise(step, t) {
+        const u = step * .071 + t * psychWalkConfig.driftRate;
+        return (
+          Math.sin(u * 1.19 + .8) * .58 +
+          Math.sin(u * .47 - 1.4) * .29 +
+          Math.sin(u * 2.16 + 2.3) * .13
+        );
+      }
+
+      function buildPsychScatterPath(leftAnchor, rightAnchor, w, h, t) {
+        const left = leftAnchor.x;
+        const right = Math.min(rightAnchor.x - 12, w * .598);
+        const top = 22;
+        const bottom = h - 38;
+        const stepSize = Math.max(2.0, (right - left) * psychWalkConfig.stepScale);
+        const margin = Math.max(psychWalkConfig.wallMargin, stepSize * 5.5);
+
+        let x = clamp(leftAnchor.x, left + 2, right - 2);
+        let y = clamp(leftAnchor.y, top + 2, bottom - 2);
+        let vx = Math.cos(-.34 + Math.sin(t * .00009) * .18);
+        let vy = Math.sin(-.34 + Math.sin(t * .00009) * .18);
+        const points = [{ x, y }];
+
+        for (let i = 0; i < psychWalkConfig.steps; i++) {
+          const turn = psychTurnNoise(i, t) * psychWalkConfig.turnRange;
+          const angle = Math.atan2(vy, vx) + turn;
+          vx = Math.cos(angle);
+          vy = Math.sin(angle);
+
+          const leftPush = x < left + margin ? (1 - (x - left) / margin) : 0;
+          const rightPush = x > right - margin ? (1 - (right - x) / margin) : 0;
+          const topPush = y < top + margin ? (1 - (y - top) / margin) : 0;
+          const bottomPush = y > bottom - margin ? (1 - (bottom - y) / margin) : 0;
+
+          vx += (leftPush - rightPush) * psychWalkConfig.wallForce;
+          vy += (topPush - bottomPush) * psychWalkConfig.wallForce;
+
+          const mag = Math.hypot(vx, vy) || 1;
+          vx /= mag;
+          vy /= mag;
+
+          x += vx * stepSize;
+          y += vy * stepSize;
+
+          x = clamp(x, left + 1.5, right - 1.5);
+          y = clamp(y, top + 1.5, bottom - 1.5);
+          points.push({ x, y });
+        }
+
+        for (let i = 0; i < psychWalkConfig.exitSteps; i++) {
+          const targetAngle = Math.atan2(rightAnchor.y - y, rightAnchor.x - x);
+          const baseAngle = Math.atan2(vy, vx);
+          const turnToward = clamp(wrapAngle(targetAngle - baseAngle), -.12, .12);
+          const angle = baseAngle + turnToward + psychTurnNoise(psychWalkConfig.steps + i, t) * .028;
+          vx = Math.cos(angle);
+          vy = Math.sin(angle);
+
+          const topPush = y < top + margin ? (1 - (y - top) / margin) : 0;
+          const bottomPush = y > bottom - margin ? (1 - (bottom - y) / margin) : 0;
+          vx += .04;
+          vy += (topPush - bottomPush) * psychWalkConfig.wallForce * .7;
+
+          const mag = Math.hypot(vx, vy) || 1;
+          vx /= mag;
+          vy /= mag;
+
+          x += vx * stepSize * .94;
+          y += vy * stepSize * .94;
+
+          x = Math.min(rightAnchor.x, Math.max(left + 1.5, x));
+          y = clamp(y, top + 1.5, bottom - 1.5);
+          points.push({ x, y });
+
+          if (Math.hypot(rightAnchor.x - x, rightAnchor.y - y) < stepSize * 1.25) break;
+        }
+
+        points.push({ x: rightAnchor.x, y: rightAnchor.y });
+        return smoothPath(points, psychWalkConfig.smoothPasses);
+      }
+
+      function drawPsychograph(t) {
+        const canvas = document.getElementById('psychograph');
+        const { ctx, w, h } = fitCanvas(canvas);
+        ctx.clearRect(0, 0, w, h);
+        ctx.fillStyle = '#000';
+        ctx.fillRect(0, 0, w, h);
+        drawCrossGrid(ctx, w, h, t);
+
+        ctx.save();
+        ctx.strokeStyle = 'rgba(233,164,47,.88)';
+        ctx.fillStyle = 'rgba(255,176,0,.95)';
+        ctx.shadowColor = 'rgba(255,122,0,.42)';
+        ctx.shadowBlur = 8;
+        ctx.lineWidth = 2;
+
+        const railW = 47;
+        ctx.beginPath();
+        ctx.moveTo(railW, 0);
+        ctx.lineTo(railW, h);
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+        ctx.font = '10px monospace';
+        ctx.textAlign = 'right';
+        ctx.textBaseline = 'middle';
+        for (let i = 0; i <= 12; i++) {
+          const y = h - 30 - i * ((h - 64) / 12);
+          ctx.fillText(`+${pad(i)}`, railW - 10, y);
+          ctx.fillRect(railW - 7, y - 1, 7, 2);
+          ctx.globalAlpha = .45;
+          ctx.fillRect(railW + 2, y - 1, 12, 2);
+          ctx.globalAlpha = 1;
+        }
+
+        ctx.strokeStyle = 'rgba(142,229,207,.72)';
+        ctx.shadowBlur = 5;
+        [w * .30, w * .55, w * .83].forEach((x) => {
+          ctx.beginPath();
+          ctx.moveTo(x, 8);
+          ctx.lineTo(x, h - 30);
+          ctx.stroke();
+          for (let y = 26; y < h - 30; y += 48) {
+            ctx.fillStyle = 'rgba(142,229,207,.66)';
+            ctx.fillRect(x - 5, y, 10, 2);
+            ctx.fillRect(x - 1, y - 5, 2, 10);
+          }
+        });
+
+        const leftAnchor = {
+          x: Math.max(railW + 18, w * .305),
+          y: h * .12 + Math.sin(t / 800) * 1.6
+        };
+        const rightAnchor = {
+          x: w * .645,
+          y: h * .16 + Math.cos(t / 910) * 1.8
+        };
+        const leftCurve = [
+          { x: railW + 9, y: h - 29 },
+          { x: railW + 26, y: h - 12 },
+          { x: w * .15, y: h * .73 + Math.sin(t / 460) * 1.5 },
+          { x: w * .22, y: h * .52 + Math.cos(t / 540) * 1.8 },
+          { x: w * .26, y: h * .35 + Math.sin(t / 610) * 1.3 },
+          leftAnchor
+        ];
+
+        ctx.strokeStyle = 'rgba(233,164,47,.94)';
+        ctx.shadowColor = 'rgba(255,122,0,.48)';
+        ctx.shadowBlur = 8;
+        ctx.lineWidth = 2.2;
+        ctx.lineCap = 'round';
+        drawSmoothTrace(ctx, leftCurve);
+        ctx.stroke();
+
+        ctx.strokeStyle = 'rgba(255,176,0,.94)';
+        ctx.shadowColor = 'rgba(255,122,0,.62)';
+        ctx.shadowBlur = 10;
+        ctx.globalCompositeOperation = 'lighter';
+        ctx.lineWidth = 1.95;
+        ctx.globalAlpha = .96;
+        const psychPath = buildPsychScatterPath(leftAnchor, rightAnchor, w, h, t);
+        drawSmoothTrace(ctx, psychPath);
+        ctx.stroke();
+
+        ctx.lineWidth = .95;
+        ctx.globalAlpha = .22;
+        drawSmoothTrace(ctx, psychPath.map((point, index) => ({
+          x: point.x + Math.sin(t / 380 + index * .025) * .55,
+          y: point.y + Math.cos(t / 410 + index * .021) * .55
+        })));
+        ctx.stroke();
+        ctx.globalAlpha = 1;
+        ctx.globalCompositeOperation = 'source-over';
+
+        ctx.lineCap = 'butt';
+        ctx.strokeStyle = 'rgba(255,122,0,.94)';
+        ctx.lineWidth = 2;
+        ctx.shadowBlur = 8;
+        ctx.beginPath();
+        const steps = [
+          [rightAnchor.x, rightAnchor.y],
+          [w * .645, rightAnchor.y], [w * .645, h * .355],
+          [w * .742, h * .355], [w * .742, h * .525],
+          [w * .812, h * .525], [w * .812, h * .695],
+          [w * .875, h * .695], [w * .875, h * .845],
+          [w * .928, h * .845], [w * .928, h * .805],
+          [w * .968, h * .805], [w * .968, h * .845],
+          [w * .995, h * .845]
+        ];
+        steps.forEach(([x, y], i) => i ? ctx.lineTo(x, y) : ctx.moveTo(x, y));
+        ctx.stroke();
+
+        ctx.shadowBlur = 0;
+        ctx.fillStyle = 'rgba(255,176,0,.80)';
+        for (let x = 0; x < w; x += 8) {
+          const tall = x % 40 === 0;
+          ctx.fillRect(x, h - 14, 2, tall ? 11 : 5);
+        }
+        ctx.font = '11px monospace';
+        ctx.textAlign = 'center';
+        for (let n = 0; n <= 110; n += 10) {
+          const x = railW + n / 110 * (w - railW - 18);
+          ctx.fillText(`+${n}`, x, h - 2);
+        }
+        ctx.restore();
+      }
+
+      function drawWireframe(t) {
+        const canvas = document.getElementById('wireframe');
+        const { ctx, w, h } = fitCanvas(canvas);
+        ctx.clearRect(0, 0, w, h);
+        ctx.fillStyle = '#000';
+        ctx.fillRect(0, 0, w, h);
+
+        const project = (x, z, y = 0) => {
+          const depth = z + 4.2;
+          const s = Math.min(w, h) * .56 / depth;
+          return {
+            x: w * .52 + x * s,
+            y: h * .82 - z * h * .032 - y * s * .74
+          };
+        };
+
+        ctx.save();
+        ctx.strokeStyle = 'rgba(142,229,207,.70)';
+        ctx.lineWidth = 1.1;
+        ctx.shadowColor = 'rgba(40,241,214,.28)';
+        ctx.shadowBlur = 6;
+        for (let x = -5; x <= 5; x++) {
+          ctx.beginPath();
+          for (let z = 0; z <= 8; z += .25) {
+            const p = project(x, z);
+            if (z === 0) ctx.moveTo(p.x, p.y); else ctx.lineTo(p.x, p.y);
+          }
+          ctx.stroke();
+        }
+        for (let z = 0; z <= 8; z++) {
+          ctx.beginPath();
+          for (let x = -5; x <= 5; x += .25) {
+            const p = project(x, z);
+            if (x === -5) ctx.moveTo(p.x, p.y); else ctx.lineTo(p.x, p.y);
+          }
+          ctx.stroke();
+        }
+
+        ctx.shadowBlur = 0;
+        ctx.fillStyle = 'rgba(255,255,255,.82)';
+        ctx.font = '10px monospace';
+        ctx.textAlign = 'center';
+        for (let z = 0; z <= 8; z++) {
+          for (let x = -5; x <= 5; x++) {
+            const p = project(x, z);
+            const v = Math.abs((x * 3 + z * 7) % 10);
+            if ((x + z) % 2 === 0) ctx.fillText(String(v), p.x, p.y - 2);
+          }
+        }
+
+        function tower(x, side) {
+          ctx.save();
+          ctx.strokeStyle = 'rgba(255,122,0,.86)';
+          ctx.fillStyle = 'rgba(255,122,0,.70)';
+          ctx.shadowColor = 'rgba(255,122,0,.36)';
+          ctx.shadowBlur = 8;
+          const y0 = h * .16;
+          const y1 = h * .86;
+          ctx.strokeRect(x, y0, side, y1 - y0);
+          for (let i = 0; i < 18; i++) {
+            const y = y0 + 14 + i * ((y1 - y0 - 30) / 17);
+            const offset = i % 5 === 0 ? 10 : 0;
+            ctx.strokeRect(x + 7 + offset, y, side - 14 - offset, 7);
+            if (i % 6 === 1) ctx.fillRect(x + side - 14, y, 8, 7);
+          }
+          ctx.restore();
+        }
+        tower(13, 48);
+        tower(w - 63, 48);
+
+        ctx.save();
+        ctx.strokeStyle = 'rgba(255,122,0,.88)';
+        ctx.fillStyle = 'rgba(255,176,0,.92)';
+        ctx.shadowColor = 'rgba(255,122,0,.55)';
+        ctx.shadowBlur = 8;
+        ctx.lineWidth = 1.6;
+        wireNodes.forEach((node, i) => {
+          const top = {
+            x: node.x * w + Math.sin(t / 700 + node.phase) * 5,
+            y: node.y * h + Math.cos(t / 920 + node.phase) * 4
+          };
+          const base = project(node.baseX, node.baseZ, 0);
+          ctx.beginPath();
+          ctx.moveTo(base.x, base.y);
+          const c1 = { x: (base.x + top.x) / 2 + Math.sin(node.phase) * 22, y: base.y - h * (.13 + (i % 5) * .012) };
+          ctx.quadraticCurveTo(c1.x, c1.y, top.x, top.y);
+          ctx.stroke();
+          ctx.beginPath();
+          ctx.arc(top.x, top.y, 2.3, 0, Math.PI * 2);
+          ctx.fill();
+        });
+
+        ctx.globalAlpha = .42;
+        for (let i = 1; i < wireNodes.length; i += 2) {
+          const a = wireNodes[i - 1];
+          const b = wireNodes[i];
+          ctx.beginPath();
+          ctx.moveTo(a.x * w, a.y * h);
+          ctx.bezierCurveTo(a.x * w, (a.y - .06) * h, b.x * w, (b.y + .05) * h, b.x * w, b.y * h);
+          ctx.stroke();
+        }
+        ctx.restore();
+      }
+
+      function render(t) {
+        if (!motionOK && lastRender) return;
+        if (t - lastRender > (motionOK ? 33 : 1000)) {
+          drawPsychograph(t);
+          drawWireframe(t);
+          lastRender = t;
+        }
+        if (motionOK) requestAnimationFrame(render);
+      }
+
+      function ambientReads() {
+        if (!motionOK) return;
+        const panel = panels[Math.floor(Math.random() * panels.length)];
+        triggerRead(panel);
+        window.setTimeout(ambientReads, 2200 + Math.random() * 4200);
+      }
+
+      window.addEventListener('resize', () => {
+        drawPsychograph(performance.now());
+        drawWireframe(performance.now());
+      });
+
+      updateClock();
+      drawPsychograph(0);
+      drawWireframe(0);
+      requestAnimationFrame(render);
+      window.setInterval(updateClock, 1000);
+      window.setInterval(tickPoll, 1000);
+      window.setInterval(updateLiveValues, 2600);
+      window.setTimeout(ambientReads, 1800);
+      window.setTimeout(() => body.classList.add('boot-complete'), 900);
+      window.setTimeout(() => addLog('Vector CRT demo initialized', 'ok'), 1300);
+    })();
+  </script>
+</body>
+</html>
