@@ -1,0 +1,63 @@
+<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 720 420'>
+  <defs>
+    <linearGradient id='barrier' x1='0' x2='0' y1='0' y2='1'>
+      <stop offset='0' stop-color='#4dff65'/><stop offset='.55' stop-color='#c6b244'/><stop offset='1' stop-color='#df2b20'/>
+    </linearGradient>
+    <filter id='orangeGlow'><feGaussianBlur stdDeviation='1.6'/><feMerge><feMergeNode/><feMergeNode in='SourceGraphic'/></feMerge></filter>
+    <filter id='blueGlow'><feGaussianBlur stdDeviation='1.15'/><feMerge><feMergeNode/><feMergeNode in='SourceGraphic'/></feMerge></filter>
+  </defs>
+  <rect width='720' height='420' fill='#020604'/>
+  <g opacity='.22' stroke='#213b23' stroke-width='1'>
+    <path d='M0 40H720M0 80H720M0 120H720M0 160H720M0 200H720M0 240H720M0 280H720M0 320H720M0 360H720'/>
+    <path d='M40 0V420M80 0V420M120 0V420M160 0V420M200 0V420M240 0V420M280 0V420M320 0V420M360 0V420M400 0V420M440 0V420M480 0V420M520 0V420M560 0V420M600 0V420M640 0V420M680 0V420'/>
+  </g>
+  <g fill='none' stroke='url(#barrier)' stroke-linejoin='round' filter='url(#orangeGlow)' opacity='.9'>
+    <path stroke-width='8' d='M322 0V134L255 204L206 304V420M398 0V134L465 204L514 304V420M0 354H210M510 354H720'/>
+    <path stroke-width='5' d='M258 204H462M302 166H418M286 236H434'/>
+  </g>
+  <g font-family='Consolas, monospace' font-weight='700' text-anchor='middle' filter='url(#orangeGlow)'>
+    <g fill='#160700' stroke='#ff4d2d' stroke-width='3'>
+      <path d='M62 76h135l54 54-54 54H62z'/><path d='M475 76h135l54 54-54 54H475z'/>
+      <path d='M272 20h176v94H272z'/><path d='M276 292h168v108H276z'/>
+      <path d='M24 250h156v98H24z'/><path d='M540 250h156v98H540z'/>
+    </g>
+    <g fill='#ffb000' font-size='19'>
+      <text x='156' y='63'>CHINA / BEIJING</text><text x='545' y='63'>GERMANY / BERLIN</text>
+      <text x='360' y='15'>MATSUSHIRO</text><text x='360' y='285'>TOKYO-3</text>
+      <text x='102' y='239'>U.S.A / MASS.</text><text x='620' y='239'>GERMANY / HAMBURG</text>
+    </g>
+    <g fill='#ff7a00' font-size='24'><text x='156' y='127'>MAGI 06</text><text x='545' y='127'>MAGI 03</text><text x='360' y='69'>MAGI 02</text><text x='360' y='344'>MAGI 01</text><text x='102' y='305'>MAGI 04</text><text x='620' y='305'>MAGI 05</text></g>
+    <g fill='#ffb000' font-size='40'>
+      <text x='88' y='150'>1</text><text x='156' y='168'>2</text><text x='210' y='115'>3</text>
+      <text x='500' y='115'>1</text><text x='545' y='168'>2</text><text x='606' y='150'>3</text>
+      <text x='304' y='75'>1</text><text x='360' y='105'>2</text><text x='416' y='75'>3</text>
+      <text x='315' y='378'>3</text><text x='360' y='330'>2</text><text x='405' y='378'>1</text>
+      <text x='64' y='284'>3</text><text x='126' y='320'>2</text><text x='64' y='340'>1</text>
+      <text x='592' y='284'>1</text><text x='652' y='320'>2</text><text x='652' y='340'>3</text>
+    </g>
+    <g fill='#020604' stroke='#ff7a00' stroke-width='3'>
+      <rect x='72' y='112' width='46' height='46' rx='7'/><rect x='139' y='132' width='46' height='46' rx='7'/><rect x='190' y='87' width='46' height='46' rx='7'/>
+      <rect x='480' y='87' width='46' height='46' rx='7'/><rect x='526' y='132' width='46' height='46' rx='7'/><rect x='585' y='112' width='46' height='46' rx='7'/>
+      <rect x='284' y='39' width='46' height='55' rx='7'/><rect x='337' y='71' width='46' height='55' rx='7'/><rect x='390' y='39' width='46' height='55' rx='7'/>
+      <rect x='296' y='322' width='46' height='58' rx='7'/><rect x='337' y='292' width='46' height='58' rx='7'/><rect x='378' y='322' width='46' height='58' rx='7'/>
+      <rect x='43' y='262' width='64' height='44' rx='7'/><rect x='107' y='297' width='64' height='44' rx='7'/><rect x='43' y='322' width='64' height='44' rx='7'/>
+      <rect x='570' y='262' width='64' height='44' rx='7'/><rect x='632' y='297' width='64' height='44' rx='7'/><rect x='632' y='322' width='64' height='44' rx='7'/>
+    </g>
+  </g>
+  <g stroke='#2389ff' stroke-width='1.2' fill='none' filter='url(#blueGlow)' stroke-linecap='round'>
+    <g opacity='.84'><animate attributeName='opacity' dur='.72s' values='.9;.18;.55;.9' keyTimes='0;.32;.64;1' repeatCount='indefinite'/>
+      <path d='M118 136C192 174 245 250 337 320M185 154C249 210 277 253 378 321M235 109C275 160 317 214 359 292M480 109C406 158 381 224 343 292M572 154C500 204 452 253 382 322M634 285C520 280 454 318 383 323M44 338C172 320 260 350 336 325M302 94C250 137 190 205 73 284M418 94C480 130 548 208 654 338'/>
+      <path d='M118 136L360 69M185 154L416 69M235 109L545 168M480 109L156 168M572 154L360 330M634 285L315 378M44 338L405 378'/>
+    </g>
+    <g opacity='.22'><animate attributeName='opacity' dur='.72s' begin='.24s' values='.18;.95;.2;.18' keyTimes='0;.32;.64;1' repeatCount='indefinite'/>
+      <path d='M88 136C161 108 228 53 304 66M156 168C209 235 251 286 315 350M210 115C309 139 393 151 545 168M500 109C425 184 421 273 405 350M606 150C500 157 436 222 360 330M592 284C469 306 403 280 337 320M652 338C530 337 474 320 378 321M64 284C163 244 274 120 416 66'/>
+      <path d='M64 340L337 320M126 320L405 378M592 284L360 69M652 320L88 136M302 66L652 338M416 66L44 338'/>
+    </g>
+    <g opacity='.35'><animate attributeName='opacity' dur='.72s' begin='.48s' values='.25;.5;.92;.25' keyTimes='0;.32;.64;1' repeatCount='indefinite'/>
+      <path d='M73 284C200 260 291 280 383 323M107 319C200 322 257 300 360 330M570 284C472 260 400 239 337 292M632 319C524 315 446 252 360 105M337 98C277 174 184 245 64 340M390 66C291 156 227 243 126 320M526 154C411 202 331 213 235 109M585 136C474 148 352 247 315 378'/>
+      <path d='M337 98L126 320M390 66L570 284M526 154L315 378M585 136L73 284M107 319L480 109M632 319L235 109'/>
+    </g>
+  </g>
+  <g fill='#2aa7ff' filter='url(#blueGlow)'><circle r='3'><animateMotion dur='.72s' repeatCount='indefinite' path='M118 136C192 174 245 250 337 320'/></circle><circle r='3'><animateMotion dur='.9s' repeatCount='indefinite' path='M606 150C500 157 436 222 360 330'/></circle><circle r='3'><animateMotion dur='.8s' repeatCount='indefinite' path='M64 340L337 320'/></circle><circle r='3'><animateMotion dur='.76s' repeatCount='indefinite' path='M302 66L652 338'/></circle></g>
+  <g fill='#ffb000' font-family='Consolas, monospace' font-weight='700' font-size='24' text-anchor='middle' filter='url(#orangeGlow)'><text x='360' y='213'>MAIN BARRIER</text><text x='360' y='241' font-size='15'>1st DEFENSE LINE</text><text x='360' y='265' font-size='15'>2nd DEFENSE LINE</text></g>
+</svg>
